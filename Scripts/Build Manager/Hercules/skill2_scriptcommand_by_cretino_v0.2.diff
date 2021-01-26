@@ -1,0 +1,117 @@
+ src/map/pc.c     | 42 ++++++++++++++++++++++++++++++++++++++++++
+ src/map/pc.h     |  1 +
+ src/map/script.c | 22 ++++++++++++++++++++++
+ 3 files changed, 65 insertions(+)
+
+diff --git a/src/map/pc.c b/src/map/pc.c
+index 9f302213d..4e0239077 100644
+--- a/src/map/pc.c
++++ b/src/map/pc.c
+@@ -7641,6 +7641,47 @@ static int pc_skillup(struct map_session_data *sd, uint16 skill_id)
+ 	return 0;
+ }
+ 
++/*==========================================
++ * Grants a player a given skill.
++ * [Cretino]
++ *------------------------------------------*/
++static int pc_skill2(struct map_session_data *sd, uint16 skill_id, int level)
++{
++	int index = 0;
++
++	nullpo_ret(sd);
++
++	if (skill_id >= GD_SKILLBASE && skill_id < GD_SKILLBASE + MAX_GUILDSKILL)
++		return 0;
++
++	if (skill_id >= HM_SKILLBASE && skill_id < HM_SKILLBASE + MAX_HOMUNSKILL && sd->hd)
++		return 0;
++
++	if (!(index = skill->get_index(skill_id)))
++		return 0;
++
++	//Set skill data overwriting whatever was there before.
++	sd->status.skill[index].id = skill_id;
++	sd->status.skill[index].flag = SKILL_FLAG_PERMANENT;
++	sd->status.skill[index].lv = cap_value(sd->status.skill[index].lv + level, 0, skill->tree_get_max(skill_id, sd->status.class));
++
++	if (sd->status.skill[index].lv == 0)
++	{
++		//Remove skill.
++		sd->status.skill[index].id = 0;
++		clif->deleteskill(sd, skill_id);
++	}
++	else
++	{
++		clif->addskill(sd, skill_id);
++	}
++
++	//if (!skill->dbs->db[index].inf) //Only recalculate for passive skills.
++	//	status_calc_pc(sd, SCO_NONE);
++
++	return 0;
++}
++
+ /*==========================================
+  * /allskill
+  *------------------------------------------*/
+@@ -12951,6 +12992,7 @@ void pc_defaults(void)
+ 	pc->statusup = pc_statusup;
+ 	pc->statusup2 = pc_statusup2;
+ 	pc->skillup = pc_skillup;
++	pc->skill2 = pc_skill2;
+ 	pc->allskillup = pc_allskillup;
+ 	pc->resetlvl = pc_resetlvl;
+ 	pc->resetstate = pc_resetstate;
+diff --git a/src/map/pc.h b/src/map/pc.h
+index bd8c5d1d4..093298294 100644
+--- a/src/map/pc.h
++++ b/src/map/pc.h
+@@ -1041,6 +1041,7 @@ END_ZEROED_BLOCK; /* End */
+ 	bool (*statusup) (struct map_session_data *sd, int type, int increase);
+ 	int (*statusup2) (struct map_session_data *sd,int type,int val);
+ 	int (*skillup) (struct map_session_data *sd,uint16 skill_id);
++	int (*skill2) (struct map_session_data *sd,uint16 skill_id, int level);
+ 	int (*allskillup) (struct map_session_data *sd);
+ 	int (*resetlvl) (struct map_session_data *sd,int type);
+ 	int (*resetstate) (struct map_session_data *sd);
+diff --git a/src/map/script.c b/src/map/script.c
+index 7d856b0df..7ff7581bd 100644
+--- a/src/map/script.c
++++ b/src/map/script.c
+@@ -10648,6 +10648,27 @@ static BUILDIN(autobonus3)
+ 	return true;
+ }
+ 
++/// Changes the level of a player skill.
++/// [Cretino]
++/// skill2 <skill id>,<level>
++/// skill2 "<skill name>",<level>
++static BUILDIN(skill2)
++{
++	uint16 id;
++	int level;
++	struct map_session_data *sd = script->rid2sd(st);
++
++	if (sd == NULL)
++		return true;
++
++	id = (script_isstringtype(st, 2) ? skill->name2id(script_getstr(st, 2)) : script_getnum(st, 2));
++	level = script_getnum(st, 3);
++
++	pc->skill2(sd, id, level);
++
++	return true;
++}
++
+ /// Changes the level of a player skill.
+ /// <flag> defaults to 1
+ /// <flag>=0 : set the level of the skill
+@@ -27567,6 +27588,7 @@ static void script_parse_builtin(void)
+ 		BUILDIN_DEF(autobonus2,"sii??"),
+ 		BUILDIN_DEF(autobonus3,"siiv?"),
+ 		BUILDIN_DEF(skill,"vi?"),
++		BUILDIN_DEF(skill2,"vi"), // [Cretino]
+ 		BUILDIN_DEF(addtoskill,"vi?"), // [Valaris]
+ 		BUILDIN_DEF(guildskill,"vi"),
+ 		BUILDIN_DEF(getskilllv,"v"),

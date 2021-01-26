@@ -1,0 +1,105 @@
+ src/map/pc.cpp     | 35 +++++++++++++++++++++++++++++++++++
+ src/map/pc.hpp     |  1 +
+ src/map/script.cpp | 24 ++++++++++++++++++++++++
+ 3 files changed, 60 insertions(+)
+
+diff --git a/src/map/pc.cpp b/src/map/pc.cpp
+index 8b43606ed..1846e0c78 100755
+--- a/src/map/pc.cpp
++++ b/src/map/pc.cpp
+@@ -4648,6 +4648,41 @@ void pc_bonus5(struct map_session_data *sd,int type,int type2,int type3,int type
+ 	}
+ }
+ 
++/*==========================================
++ *	Grants a player a given permanent skill.
++ * [Cretino]
++ *------------------------------------------*/
++bool pc_skill2(struct map_session_data* sd, uint16 skill_id, int level)
++{
++	uint16 idx = 0;
++
++	nullpo_ret(sd);
++
++	if (!skill_id || !(idx = skill_get_index(skill_id)))
++		return false;
++
++	//Set skill data overwriting whatever was there before.
++	sd->status.skill[idx].id   = skill_id;
++	sd->status.skill[idx].lv   = cap_value(sd->status.skill[idx].lv + level, 0, skill_tree_get_max(skill_id, sd->status.class_));
++	sd->status.skill[idx].flag = SKILL_FLAG_PERMANENT;
++
++	if (sd->status.skill[idx].lv == 0)
++	{
++		//Remove skill.
++		sd->status.skill[idx].id = 0;
++		clif_deleteskill(sd, skill_id);
++	}
++	else
++	{
++		clif_addskill(sd, skill_id);
++	}
++
++	//if (!skill_get_inf(skill_id)) //Only recalculate for passive skills.
++	//	status_calc_pc(sd, SCO_NONE);
++
++	return true;
++}
++
+ /*==========================================
+  *	Grants a player a given skill. Flag values are:
+  *	0 - Grant permanent skill to be bound to skill tree
+diff --git a/src/map/pc.hpp b/src/map/pc.hpp
+index 568652633..be2ad2f48 100644
+--- a/src/map/pc.hpp
++++ b/src/map/pc.hpp
+@@ -1224,6 +1224,7 @@ enum e_addskill_type {
+ };
+ 
+ bool pc_skill(struct map_session_data *sd, uint16 skill_id, int level, enum e_addskill_type type);
++bool pc_skill2(struct map_session_data* sd, uint16 skill_id, int level); //[Cretino]
+ 
+ int pc_insert_card(struct map_session_data *sd,int idx_card,int idx_equip);
+ 
+diff --git a/src/map/script.cpp b/src/map/script.cpp
+index 3f14d0634..5813fde2d 100644
+--- a/src/map/script.cpp
++++ b/src/map/script.cpp
+@@ -9702,6 +9702,29 @@ BUILDIN_FUNC(autobonus3)
+ 	return SCRIPT_CMD_SUCCESS;
+ }
+ 
++/// Changes the level of a player skill.
++/// [Cretino]
++/// skill2 <skill id>,<level>
++/// skill2 "<skill name>",<level>
++BUILDIN_FUNC(skill2)
++{
++	int id;
++	int level;
++
++	TBL_PC* sd;
++	const char* command = script_getfuncname(st);
++
++	if (!script_rid2sd(sd))
++		return SCRIPT_CMD_SUCCESS;// no player attached, report source
++
++	id = (script_isstring(st, 2) ? skill_name2id(script_getstr(st, 2)) : script_getnum(st, 2));
++	level = script_getnum(st, 3);
++
++	pc_skill2(sd, id, level);
++
++	return SCRIPT_CMD_SUCCESS;
++}
++
+ /// Changes the level of a player skill.
+ /// <flag> defaults to 1
+ /// <flag>=0 : set the level of the skill
+@@ -25114,6 +25137,7 @@ struct script_function buildin_func[] = {
+ 	BUILDIN_DEF(autobonus2,"sii??"),
+ 	BUILDIN_DEF(autobonus3,"siiv?"),
+ 	BUILDIN_DEF(skill,"vi?"),
++	BUILDIN_DEF(skill2,"vi"), // [Cretino]
+ 	BUILDIN_DEF2(skill,"addtoskill","vi?"), // [Valaris]
+ 	BUILDIN_DEF(guildskill,"vi"),
+ 	BUILDIN_DEF(getskilllv,"v"),
