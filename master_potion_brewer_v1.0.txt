@@ -1,0 +1,172 @@
+//===== rAthena Script ======================================
+//= Master Potion Brewer
+//===== By: ==================================================
+//= Cretino
+//= maken06 (NPC Idea)
+//===== Current Version: =====================================
+//= 1.0 Initial version [Cretino]
+//===== Description: =========================================
+//= You can produce potions of many types. (Configurable by array)
+//= You can produce a limited amount of potions at time. (Configurable by variable)
+//= Go to line '156' to configure.
+//===== Additional Comments: =================================
+//= 1.0 Initial version [Cretino]
+//============================================================
+
+prontera,155,180,5	script	Master Potion Brewer#1	4_M_ALCHE_B,{
+	.@npc_name$ = "[" + strnpcinfo(1) + "]";
+
+	mes .@npc_name$;
+	mes "Hello " + strcharinfo(0) + ", you want to produce some potions?";
+
+	.@selected = select("Yes:No");
+
+	next;
+	mes .@npc_name$;
+
+	if (.@selected == 2)
+	{
+		mes "Ok, come back later!";
+		close;
+	}
+	else
+	{
+		mes "Select what you want to produce:";
+
+		.@menu$ = "";
+		.@menu_size = 0;
+		.@potion_idx = 0;
+		.@potion_req_count = .@potion_idx + 1;
+
+		while(true)
+		{
+			.@menu$ += getitemname(.potions_array[.@potion_idx]) + ":";
+			.@potion_idx += 2 + (.potions_array[.@potion_req_count] * 2);
+			.@potion_req_count = .@potion_idx + 1;
+			.@menu_size++;
+
+			if (getarraysize(.potions_array) == (.@potion_idx + (.potions_array[.@potion_req_count] * 2)))
+				break;
+		}
+
+		.@menu$ += "Cancel";
+
+		.@selected = select(.@menu$);
+
+		next;
+		mes .@npc_name$;
+
+		if (.@selected == (.@menu_size + 1))
+		{
+			mes "Ok, come back later!";
+			close;
+		}
+		else
+		{
+			.@i = .@selected - 1;
+			.@potion_idx = 0;
+			.@potion_req_count = .@potion_idx + 1;
+
+			for(.@j = 0; .@j < .@i; .@j++)
+			{
+				.@potion_idx += 2 + (.potions_array[.@potion_req_count] * 2);
+				.@potion_req_count = .@potion_idx + 1;
+			}
+
+			mes "How many " + getitemname(.potions_array[.@potion_idx]) + " you want to produce?";
+			mes "Input '0' to cancel.";
+			mes "You can produce " + .potion_produce_limit + " at time.";
+			input(.@potion_amount, 0, .potion_produce_limit);
+			next;
+			mes .@npc_name$;
+
+			if (.@potion_amount <= 0)
+			{
+				mes "Ok, come back later!";
+				close;
+			}
+
+			mes "To produce ^FF0000" + .@potion_amount + "^000000x ^FF0000" + getitemname(.potions_array[.@potion_idx]) + "^000000 you will need:";
+			
+			for(.@j = 0; .@j < .potions_array[.@potion_req_count]; .@j++)
+			{
+				mes "^FF0000" + (.potions_array[(.@potion_idx + 2 + (.@j * 2)) + 1] * .@potion_amount) + "^000000x ^FF0000" + getitemname(.potions_array[(.@potion_idx + 2 + (.@j * 2))]) + "^000000.";
+			}
+
+			mes " ";
+			mes "You want to produce?";
+
+			.@selected = select("Yes:No");
+
+			next;
+			mes .@npc_name$;
+
+			if (.@selected == 2)
+			{
+				mes "Ok, come back later!";
+				close;
+			}
+			else
+			{
+				if (checkweight(.potions_array[.@potion_idx], .@potion_amount) == false)
+				{
+					mes "You can't carry ^FF0000" + .@potion_amount + "^000000x ^FF0000" + getitemname(.potions_array[.@potion_idx]) + "^000000.";
+					close;
+				}
+
+				.@have_reqs = true;
+
+				for(.@j = 0; .@j < .potions_array[.@potion_req_count]; .@j++)
+				{
+					if (countitem(.potions_array[(.@potion_idx + 2 + (.@j * 2))]) < (.potions_array[(.@potion_idx + 2 + (.@j * 2)) + 1] * .@potion_amount))
+					{
+						.@have_reqs = false;
+
+						mes "You don't have ^FF0000" + (.potions_array[(.@potion_idx + 2 + (.@j * 2)) + 1] * .@potion_amount) + "^000000x ^FF0000" + getitemname(.potions_array[(.@potion_idx + 2 + (.@j * 2))]) + "^000000.";
+					}
+				}
+
+				if (.@have_reqs == false)
+				{
+					close;
+				}
+				else
+				{
+					for(.@j = 0; .@j < .potions_array[.@potion_req_count]; .@j++)
+					{
+						delitem .potions_array[(.@potion_idx + 2 + (.@j * 2))], (.potions_array[(.@potion_idx + 2 + (.@j * 2)) + 1] * .@potion_amount);
+					}
+
+					progressbar "ffff00", 5;
+					specialeffect EF_PHARMACY_OK, AREA;
+
+					mes "Here are your potions.";
+					mes "Come back if you need more.";
+					getitem .potions_array[.@potion_idx], .@potion_amount;
+					close;
+				}
+			}
+		}
+	}
+
+	end;
+
+	OnInit:
+		// How many potions you can produce at time.
+		.potion_produce_limit = 100;
+
+		// ONLY CHANGE IF YOU KNOW WHAT YOU'RE DOING !!
+		// Array structure: PotionID, ReqCount, ReqItemID, ReqItemAmount
+
+		setarray .potions_array[0], 7135, 3, 970, 1, 1059, 1, 713, 1, // Bottle Grenade
+									7136, 2, 713, 1, 929, 1, // Acid Bottle
+									7137, 2, 713, 1, 1032, 2, // Plant Bottle
+									7138, 3, 713, 1, 1050, 1, 1051, 1, // Marine Sphere Bottle
+									545, 3, 501, 1, 1092, 1, 952, 1, // Condensed Red Potion
+									546, 3, 503, 1, 1092, 1, 1017, 1, // Condensed Yellow Potion
+									547, 3, 504, 1, 1092, 1, 1061, 1, // Condensed White Potion
+									7139, 4, 970, 1, 950, 1, 1044, 1, 713, 1, // Glistening Coat
+									678, 7, 937, 1, 952, 1, 939, 1, 7033, 1, 972, 1, 657, 1, 713, 1; // Poison Bottle
+
+	end;
+}
