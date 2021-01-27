@@ -1,0 +1,514 @@
+//===== rAthena Script ======================================
+//= Item Enchanter
+//===== By: ==================================================
+//= Cretino
+//= Radian (NPC Idea: https://rathena.org/board/topic/120698-item-enchanter-request/)
+//===== Current Version: =====================================
+//= 1.3 Added costume headgears [Cretino]
+//===== Description: =========================================
+//= Enchant an Item Headgear equipped. (Costumes too.)
+//= The item only will be enchanted in 3rd and 4th Card Slot
+//= and can't have same enchantments.
+//= Players can only Enchant once per day. (Resets 12:00 a.m)
+//= Players can remove selected enchantments.
+//===== Additional Comments: =================================
+//= 1.0 Initial version [Cretino]
+//= 1.1 Some improvements and changes [Cretino]
+//      Added NPC usage limit.
+//      Removed character delay per enchant.
+//      Added Global delay per enchant.
+//      Added announcement when player enchant a item successfully.
+//= 1.2 Little mistake fixed [Cretino] (Thanks to Radian)
+//= 1.3 Added costume headgears [Cretino]
+//============================================================
+
+prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
+	disable_items();
+
+	set .@npc_name$, "[" + strnpcinfo(1) + "]";
+
+	mes .@npc_name$;
+	mes "Select the headgear you want:";
+
+	.@menu$ = getequipname(EQI_HEAD_LOW) + ":" + getequipname(EQI_HEAD_MID) + ":" + getequipname(EQI_HEAD_TOP) + ":" + getequipname(EQI_COSTUME_HEAD_TOP) + ":" + getequipname(EQI_COSTUME_HEAD_MID) + ":" + getequipname(EQI_COSTUME_HEAD_LOW) + ":Cancel";
+
+	switch(select(.@menu$))
+	{
+		next;
+		mes .@npc_name$;
+
+		case 1:
+			.@equip_pos = EQI_HEAD_LOW;
+			.@equip = getequipid(EQI_HEAD_LOW);
+			.@refine = getequiprefinerycnt(EQI_HEAD_LOW);
+			setarray .@enchants[0], getequipcardid(EQI_HEAD_LOW, 2), getequipcardid(EQI_HEAD_LOW, 3);
+			setarray .@cards[0], getequipcardid(EQI_HEAD_LOW, 0), getequipcardid(EQI_HEAD_LOW, 1);
+		break;
+
+		case 2:
+			.@equip_pos = EQI_HEAD_MID;
+			.@equip = getequipid(EQI_HEAD_MID);
+			.@refine = getequiprefinerycnt(EQI_HEAD_MID);
+			setarray .@enchants[0], getequipcardid(EQI_HEAD_MID, 2), getequipcardid(EQI_HEAD_MID, 3);
+			setarray .@cards[0], getequipcardid(EQI_HEAD_MID, 0), getequipcardid(EQI_HEAD_MID, 1);
+		break;
+
+		case 3:
+			.@equip_pos = EQI_HEAD_TOP;
+			.@equip = getequipid(EQI_HEAD_TOP);
+			.@refine = getequiprefinerycnt(EQI_HEAD_TOP);
+			setarray .@enchants[0], getequipcardid(EQI_HEAD_TOP, 2), getequipcardid(EQI_HEAD_TOP, 3);
+			setarray .@cards[0], getequipcardid(EQI_HEAD_TOP, 0), getequipcardid(EQI_HEAD_TOP, 1);
+		break;
+
+		case 4:
+			.@equip_pos = EQI_COSTUME_HEAD_TOP;
+			.@equip = getequipid(EQI_COSTUME_HEAD_TOP);
+			.@refine = getequiprefinerycnt(EQI_COSTUME_HEAD_TOP);
+			setarray .@enchants[0], getequipcardid(EQI_COSTUME_HEAD_TOP, 2), getequipcardid(EQI_COSTUME_HEAD_TOP, 3);
+			setarray .@cards[0], getequipcardid(EQI_COSTUME_HEAD_TOP, 0), getequipcardid(EQI_COSTUME_HEAD_TOP, 1);
+		break;
+
+		case 5:
+			.@equip_pos = EQI_COSTUME_HEAD_MID;
+			.@equip = getequipid(EQI_COSTUME_HEAD_MID);
+			.@refine = getequiprefinerycnt(EQI_COSTUME_HEAD_MID);
+			setarray .@enchants[0], getequipcardid(EQI_COSTUME_HEAD_MID, 2), getequipcardid(EQI_COSTUME_HEAD_MID, 3);
+			setarray .@cards[0], getequipcardid(EQI_COSTUME_HEAD_MID, 0), getequipcardid(EQI_COSTUME_HEAD_MID, 1);
+		break;
+
+		case 6:
+			.@equip_pos = EQI_COSTUME_HEAD_LOW;
+			.@equip = getequipid(EQI_COSTUME_HEAD_LOW);
+			.@refine = getequiprefinerycnt(EQI_COSTUME_HEAD_LOW);
+			setarray .@enchants[0], getequipcardid(EQI_COSTUME_HEAD_LOW, 2), getequipcardid(EQI_COSTUME_HEAD_LOW, 3);
+			setarray .@cards[0], getequipcardid(EQI_COSTUME_HEAD_LOW, 0), getequipcardid(EQI_COSTUME_HEAD_LOW, 1);
+		break;
+
+		case 7:
+			mes "Ok, come back later.";
+			close;
+		break;
+	}
+
+	mes "Hey " + strcharinfo(0) + ", what do you want to do with your " + getequipname(.@equip_pos) + "?";
+
+	if (.usage_limit != 0)
+		mes "Enchantments remaining: " + (.usage_limit - $ENCHANT_COUNT) + "x";
+	else if (.usage_limit == 0)
+		mes "Enchantments done: " + $ENCHANT_COUNT + "x";
+
+	switch(select((($ENCHANT_DELAY == true) ? ((.enchant_delay == true) ? "" : (($ENCHANT_COUNT >= .usage_limit) ? ((.usage_limit == 0) ? "Enchant an Item" : "") : "Enchant an Item")) : (($ENCHANT_COUNT >= .usage_limit) ? ((.usage_limit == 0) ? "Enchant an Item" : "") : "Enchant an Item")) + ":" + ((.allow_remove == true) ? "Remove an Enchant" : "") + ":Cancel"))
+	{
+		next;
+		mes .@npc_name$;
+
+		case 1:
+			if (.@equip != -1 && (.@enchants[0] == 0 || .@enchants[1] == 0))
+			{
+				mes "You want to Enchant your " + getitemname(.@equip) + "?";
+				mes "Will cost:";
+				mes " ";
+
+				for(set .@i, 0; .@i < getarraysize(.req_items); set .@i, .@i + 1)
+				{
+					mes getitemname(.req_items[.@i]) + " x" + .req_items[.@i + 1];
+					set .@i, .@i + 1;
+				}
+
+				mes F_InsertComma(.zeny) + "z";
+				mes "And a Gemstome.";
+
+				switch(select("Yes:No"))
+				{
+					next;
+					mes .@npc_name$;
+
+					case 1:
+						mes "Select the Slot you want to Enchant:";
+
+						set .@selected_slot, select((.@enchants[0] == 0 ? "3rd Slot" : "") + ":" + (.@enchants[1] == 0 ? "4th Slot" : "") + ":Cancel");
+
+						next;
+						mes .@npc_name$;
+
+						if (.@selected_slot == 3)
+						{
+							mes "Ok, come back later.";
+							close;
+						}
+
+						mes "You selected the " + ((.@selected_slot == 1) ? "3rd" : "4th") + " Slot of your " + getitemname(.@equip) + ".";
+						mes "Are you sure about this?";
+
+						switch(select("Yes:No"))
+						{
+							next;
+							mes .@npc_name$;
+
+							case 1:
+								mes "Select the Gemstone you want to Enchant in " + ((.@selected_slot == 1) ? "3rd" : "4th") + " Slot of your " + getitemname(.@equip) + ":";
+
+								set .@menu$, "";
+
+								for(set .@i, 0; .@i < getarraysize(.gemstones); set .@i, .@i + 1)
+								{
+									if (.gemstones[.@i] != .@enchants[0] && .gemstones[.@i] != .@enchants[1])
+										set .@menu$, .@menu$ + getitemname(.gemstones[.@i]) + ":";
+									else
+										set .@menu$, .@menu$ + "" + ":";
+								}
+
+								set .@selected_gemstone, select(.@menu$ + "Cancel");
+
+								next;
+								mes .@npc_name$;
+
+								if (.@selected_gemstone == getarraysize(.gemstones) + 1)
+								{
+									mes "Ok, come back later.";
+									close;
+								}
+
+								mes "You selected " + getitemname(.gemstones[.@selected_gemstone - 1]) + " to Enchant in " + ((.@selected_slot == 1) ? "3rd" : "4th") + " Slot of your " + getitemname(.@equip) + ".";
+								mes "Are you sure about this?";
+
+								switch(select("Yes:No"))
+								{
+									next;
+									mes .@npc_name$;
+
+									case 1:
+										set .@failed, false;
+
+										if (countitem(.gemstones[.@selected_gemstone - 1]) < 1)
+										{
+											set .@failed, true;
+
+											mes "You don't have " + getitemname(.gemstones[.@selected_gemstone - 1]) + " x1.";
+										}
+
+										for(set .@i, 0; .@i < getarraysize(.req_items); set .@i, .@i + 1)
+										{
+											if (countitem(.req_items[.@i]) < .req_items[.@i + 1])
+											{
+												set .@failed, true;
+
+												mes "You don't have " + getitemname(.req_items[.@i]) + " x" + .req_items[.@i + 1] + ".";
+											}
+
+											set .@i, .@i + 1;
+										}
+
+										if (Zeny < .zeny)
+										{
+											set .@failed, true;
+
+											mes "You don't have " + F_InsertComma(.zeny) + "z.";
+										}
+
+										if (getequipid(.@equip_pos) != .@equip || getequiprefinerycnt(.@equip_pos) != .@refine ||
+										getequipcardid(.@equip_pos, 0) != .@cards[0] || getequipcardid(.@equip_pos, 1) != .@cards[1] ||
+										getequipcardid(.@equip_pos, 2) != .@enchants[0] || getequipcardid(.@equip_pos, 3) != .@enchants[1])
+										{
+											set .@failed, true;
+
+											mes "Are you trying to cheat me?";
+											mes "I saw you switching your equipment...";
+											mes "Get out of here!!!";
+										}
+
+										if (.@failed == false)
+										{
+											for(set .@i, 0; .@i < getarraysize(.req_items); set .@i, .@i + 1)
+											{
+												delitem .req_items[.@i], .req_items[.@i + 1];
+												set .@i, .@i + 1;
+											}
+
+											set Zeny, Zeny - .zeny;
+
+											if (rand((.@selected_slot == 1) ? .Slot3[0] : .Slot4[0], (.@selected_slot == 1) ? .Slot3[1] : .Slot4[1]) <= rand(100))
+											{
+												if (.deleteitem == 1 || .deleteitem == 3)
+													delitem .gemstones[.@selected_gemstone - 1], 1;
+
+												if (.deleteitem == 2 || .deleteitem == 3)
+													delequip .@equip_pos;
+
+												mes "Sorry " + strcharinfo(0) + ", I failed this time...";
+												mes "Try again later...";
+
+												specialeffect(EF_REFINEFAIL, SELF, getcharid(CHAR_ID_ACCOUNT));
+											}
+											else
+											{
+												mes "Your " + getitemname(.@equip) + " was successfully enchanted!!!";
+
+												//set ENCHANT_DELAY, true;
+												if (.enchant_delay == true)
+													set $ENCHANT_DELAY, true;
+
+												set $ENCHANT_COUNT, $ENCHANT_COUNT + 1;
+
+												delitem .gemstones[.@selected_gemstone - 1], 1;
+												delequip .@equip_pos;
+												getitem2 .@equip, 1, 1, .@refine, 0, .@cards[0], .@cards[1], (.@selected_slot == 1) ? .gemstones[.@selected_gemstone - 1] : .@enchants[0], (.@selected_slot == 2) ? .gemstones[.@selected_gemstone - 1] : .@enchants[1];
+												equip .@equip;
+												specialeffect(EF_REFINEOK, SELF, getcharid(CHAR_ID_ACCOUNT));
+												announce "Congratulations [" + strcharinfo(0) + "], got a [" + getitemname(.gemstones[.@selected_gemstone - 1]) + "] enchantment in your [" + getitemname(.@equip) + "]!!!", bc_all;
+												end;
+											}
+										}
+
+										close;
+									break;
+
+									case 2:
+										mes "Ok, come back later.";
+										close;
+									break;
+								}
+							break;
+
+							case 2:
+								mes "Ok, come back later.";
+								close;
+							break;
+						}
+					break;
+
+					case 2:
+						mes "Ok, come back later.";
+						close;
+					break;
+				}
+			}
+			else
+			{
+				mes "Sorry " + strcharinfo(0) + ", but I can't Enchant your item.";
+		
+				if (.@equip == -1)
+					mes "Because you need to equip an upper headgear.";
+				else
+					mes "Because you already enchanted 3rd and 4th Slots of your " + getitemname(.@equip) + ".";
+		
+				close;
+			}
+		break;
+
+		case 2:
+			if (.@equip != -1 && (.@enchants[0] != 0 || .@enchants[1] != 0))
+			{
+				mes "You want to remove an Enchant of your " + getitemname(.@equip) + "?";
+				mes "Will cost:";
+				mes " ";
+				mes F_InsertComma(.zeny) + "z or " + getitemname(.coin[0]) + " x" + .coin[1];
+
+				set .@selected_option, select("Zeny:" + getitemname(.coin[0]) + ":Cancel");
+				
+				switch(.@selected_option)
+				{
+					next;
+					mes .@npc_name$;
+
+					case 1:
+					case 2:
+						set .@failed, false;
+
+						if (.@selected_option == 1)
+						{
+							if (Zeny < .zeny)
+							{
+								set .@failed, true;
+
+								mes "You don't have " + F_InsertComma(.zeny) + "z.";
+							}
+						}
+						else if (.@selected_option == 2)
+						{
+							if (countitem(.coin[0]) < .coin[1])
+							{
+								set .@failed, true;
+
+								mes "You don't have " + getitemname(.coin[0]) + " x" + .coin[1] + ".";
+							}
+						}
+
+						if (.@failed == false)
+						{
+							mes "Select an Enchant you want to remove from your " + getitemname(.@equip) + ":";
+	
+							set .@selected_enchant, select((.@enchants[0] == 0 ? "" : getitemname(.@enchants[0])) + ":" + (.@enchants[1] == 0 ? "" : getitemname(.@enchants[1])) + ":Cancel");
+	
+							next;
+							mes .@npc_name$;
+	
+							if (.@selected_enchant == 3)
+							{
+								mes "Ok, come back later.";
+								close;
+							}
+	
+							mes "You selected the Enchant " + getitemname(getitemname(.@enchants[.@selected_enchant - 1])) + " of your " + getitemname(.@equip) + ".";
+							mes "Are you sure about this?";
+	
+							switch(select("Yes:No"))
+							{
+								next;
+								mes .@npc_name$;
+	
+								case 1:
+									if (getequipid(.@equip_pos) != .@equip || getequiprefinerycnt(.@equip_pos) != .@refine ||
+									getequipcardid(.@equip_pos, 0) != .@cards[0] || getequipcardid(.@equip_pos, 1) != .@cards[1] ||
+									getequipcardid(.@equip_pos, 2) != .@enchants[0] || getequipcardid(.@equip_pos, 3) != .@enchants[1])
+									{
+										set .@failed, true;
+	
+										mes "Are you trying to cheat me?";
+										mes "I saw you switching your equipment...";
+										mes "Get out of here!!!";
+									}
+	
+									if (.@failed == false)
+									{
+										if (.@selected_option == 1)
+											set Zeny, Zeny - .zeny;
+										else if (.@selected_option == 2)
+											delitem .coin[0], .coin[1];
+	
+										mes "The Enchant has removed from your " + getitemname(.@equip) + " successfully!!";
+	
+										getitem .@enchants[.@selected_enchant - 1], 1;
+										delequip .@equip_pos;
+										getitem2 .@equip, 1, 1, .@refine, 0, .@cards[0], .@cards[1], (.@selected_enchant == 1) ? 0 : .@enchants[0], (.@selected_enchant == 2) ? 0 : .@enchants[1];
+										equip .@equip;
+										specialeffect(EF_REFINEOK, SELF, getcharid(CHAR_ID_ACCOUNT));
+									}
+	
+									close;
+								break;
+	
+								case 2:
+									mes "Ok, come back later.";
+									close;
+								break;
+							}
+						}
+
+						close;
+					break;
+
+					case 3:
+						mes "Ok, come back later.";
+						close;
+					break;
+				}
+			}
+			else
+			{
+				mes "Sorry " + strcharinfo(0) + ", but I can't remove an Enchant of your item.";
+
+				if (.@equip == -1)
+					mes "Because you need to equip an upper headgear.";
+				else
+					mes "Because you don't have any Enchant in your " + getitemname(.@equip) + ".";
+
+				close;
+			}
+		break;
+
+		case 3:
+			mes "Ok, come back later.";
+			close;
+		break;
+	}
+
+	OnInit:
+		// Gemstone/Stone ID's
+		setarray .gemstones[0], 601, 602, 603, 604, 605;
+
+		// Additional requirements
+		// Array structure: Item ID, Item Amount, Item ID, Item Amount...
+		setarray .req_items[0], 501, 10, 502, 3, 503, 7, 504, 9, 505, 99;
+
+		// Will the npc allow players
+		// to remove gemstone/stone
+		// in their headgear?
+		// false = disable
+		// true = enable (default)
+		set .allow_remove, true;
+
+		// Payments for removing
+		// enchantments (stone/gemstone)
+		// .zeny[0] = For remove enchantments
+		// .zeny[1] = For add enchantments
+		setarray .zeny[0], 1000, 1000;
+
+		// .coin[0] = Coin ID
+		// .coin[1] = Coin Amount
+		setarray .coin[0], 671, 1;
+
+		// Rate Success
+		// .Slot3[0] = rand(10, 15); // 10~15% chance of success
+		// .Slot4[0] = rand(5, 15); // 5~15% chance of success
+		setarray .Slot3[0], 10, 15;
+		setarray .Slot4[0], 5, 15;
+
+		// If the enchantment fails
+		// will it be deleted?
+		// 0 = disable
+		// 1 = only the stone/gemstome (default)
+		// 2 = only the headgear
+		// 3 = all (stone/gemstone + headgear)
+		set .deleteitem, 1;
+
+		// NPC limit usage
+		// When limit usage reaches the max, the npc will disable only enchantment part.
+		// 0 = disable
+		// 100 = 100 times (default)
+		set .usage_limit, 100;
+
+		// Enchant delay
+		// When enchant delay is active, players can only enchant once per day. (Resets 12:00 a.m)
+		// false = disable
+		// true = enable (default)
+		set .enchant_delay, true;
+	end;
+
+	OnClock0000:
+		if (.enchant_delay == true)
+			set $ENCHANT_DELAY, false;
+	/*
+		query_sql "SELECT `char_id` FROM `char_reg_num` WHERE `key` = 'ENCHANT_DELAY'", .@id;
+
+		if (getarraysize(.@id) > 128)
+			set .@free, freeloop(1);
+
+		for(.@i = 0; .@i < getarraysize(.@id); .@i++)
+		{
+			query_sql "SELECT `account_id`, `online` FROM `char` WHERE `char_id` = '" + .@id[.@i] + "'", .@account_id, .@online;
+
+			if (.@online == true && isloggedin(.@account_id) == true)
+			{
+				if (attachrid(.@account_id) == true)
+				{
+					set ENCHANT_DELAY, false;
+				}
+				else
+					goto OFFLINE_PLAYER; // Can't attach to player. (Maybe offline?)
+			}
+			else
+			{
+				// Player is offline
+OFFLINE_PLAYER:
+				query_sql "DELETE FROM `char_reg_num` WHERE `key` = 'ENCHANT_DELAY' AND `char_id` = '" + .@id[.@i] + "'";
+			}
+		}
+
+		if (.@free == 1)
+			set .@free, freeloop(0);
+	*/
+	end;
+}
+
