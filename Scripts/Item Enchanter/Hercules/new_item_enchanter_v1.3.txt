@@ -116,7 +116,7 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 					set .@i, .@i + 1;
 				}
 
-				mes F_InsertComma(.zeny) + "z";
+				mes F_InsertComma(.zeny[1]) + "z";
 				mes "And a Gemstome.";
 
 				switch(select("Yes:No"))
@@ -200,11 +200,11 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 											set .@i, .@i + 1;
 										}
 
-										if (Zeny < .zeny)
+										if (Zeny < .zeny[1])
 										{
 											set .@failed, true;
 
-											mes "You don't have " + F_InsertComma(.zeny) + "z.";
+											mes "You don't have " + F_InsertComma(.zeny[1]) + "z.";
 										}
 
 										if (getequipid(.@equip_pos) != .@equip || getequiprefinerycnt(.@equip_pos) != .@refine ||
@@ -226,7 +226,7 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 												set .@i, .@i + 1;
 											}
 
-											set Zeny, Zeny - .zeny;
+											set Zeny, Zeny - .zeny[1];
 
 											if (rand((.@selected_slot == 1) ? .Slot3[0] : .Slot4[0], (.@selected_slot == 1) ? .Slot3[1] : .Slot4[1]) <= rand(100))
 											{
@@ -303,7 +303,7 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 				mes "You want to remove an Enchant of your " + getitemname(.@equip) + "?";
 				mes "Will cost:";
 				mes " ";
-				mes F_InsertComma(.zeny) + "z or " + getitemname(.coin[0]) + " x" + .coin[1];
+				mes F_InsertComma(.zeny[0]) + "z or " + getitemname(.coin[0]) + " x" + .coin[1];
 
 				set .@selected_option, select("Zeny:" + getitemname(.coin[0]) + ":Cancel");
 				
@@ -318,11 +318,11 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 
 						if (.@selected_option == 1)
 						{
-							if (Zeny < .zeny)
+							if (Zeny < .zeny[0])
 							{
 								set .@failed, true;
 
-								mes "You don't have " + F_InsertComma(.zeny) + "z.";
+								mes "You don't have " + F_InsertComma(.zeny[0]) + "z.";
 							}
 						}
 						else if (.@selected_option == 2)
@@ -373,7 +373,7 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 									if (.@failed == false)
 									{
 										if (.@selected_option == 1)
-											set Zeny, Zeny - .zeny;
+											set Zeny, Zeny - .zeny[0];
 										else if (.@selected_option == 2)
 											delitem .coin[0], .coin[1];
 	
@@ -439,8 +439,7 @@ prontera,147,167,5	script	Item Enchanter#1	4_F_VALKYRIE2,{
 		// true = enable (default)
 		set .allow_remove, true;
 
-		// Payments for removing
-		// enchantments (stone/gemstone)
+		// Payments for enchantments (stone/gemstone)
 		// .zeny[0] = For remove enchantments
 		// .zeny[1] = For add enchantments
 		setarray .zeny[0], 1000, 1000;
